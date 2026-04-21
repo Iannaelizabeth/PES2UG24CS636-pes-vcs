@@ -1,4 +1,4 @@
-// commit.c (Commit 2)
+// commit.c (Commit 3)
 
 #include "commit.h"
 #include "tree.h"
@@ -10,12 +10,21 @@
 
 int create_commit(const char *message, ObjectID *commit_id) {
     ObjectID tree_id;
+    tree_from_index(&tree_id);
 
-    if (tree_from_index(&tree_id) != 0) {
-        return -1;
-    }
+    char tree_hex[65];
+    hash_to_hex(&tree_id, tree_hex);
 
-    printf("Tree created\n");
+    char buffer[1024];
+
+    int len = snprintf(buffer, sizeof(buffer),
+        "tree %s\n\n%s\n",
+        tree_hex,
+        message
+    );
+
+    printf("Commit content built\n");
 
     return 0;
 }
+
