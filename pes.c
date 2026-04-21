@@ -5,7 +5,23 @@
 
 void init_repo() {
     mkdir(".pes", 0777);
-    printf(".pes directory created\n");
+    mkdir(".pes/objects", 0777);
+    mkdir(".pes/refs", 0777);
+    mkdir(".pes/refs/heads", 0777);
+
+    FILE *f;
+
+    f = fopen(".pes/HEAD", "w");
+    fprintf(f, "refs/heads/main\n");
+    fclose(f);
+
+    f = fopen(".pes/refs/heads/main", "w");
+    fclose(f);
+
+    f = fopen(".pes/index", "w");
+    fclose(f);
+
+    printf("Repository structure created\n");
 }
 
 int main(int argc, char *argv[]) {
