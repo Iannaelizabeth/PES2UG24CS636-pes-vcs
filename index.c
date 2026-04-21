@@ -1,4 +1,4 @@
-// index.c (Commit 4)
+// index.c (Commit 5 FINAL)
 
 #include "index.h"
 #include <stdio.h>
@@ -16,11 +16,18 @@ int index_load(Index *index) {
         return 0;
     }
 
-    fread(&index->count, sizeof(int), 1, f);
+    if (fread(&index->count, sizeof(int), 1, f) != 1) {
+        fclose(f);
+        return -1;
+    }
 
     index->entries = malloc(sizeof(IndexEntry) * index->count);
 
-    fread(index->entries, sizeof(IndexEntry), index->count, f);
+    if (fread(index->entries, sizeof(IndexEntry), index->count, f) != (size_t)index->count) {
+        fclose(f);
+        free(index->entries);
+        return -1;
+    }
 
     fclose(f);
     return 0;
@@ -30,8 +37,15 @@ int index_save(Index *index) {
     FILE *f = fopen(INDEX_FILE, "wb");
     if (!f) return -1;
 
-    fwrite(&index->count, sizeof(int), 1, f);
-    fwrite(index->entries, sizeof(IndexEntry), index->count, f);
+    if (fwrite(&index->count, sizeof(int), 1, f) != 1) {
+        fclose(f);
+        return -1;
+    }
+
+    if (fwrite(index->entries, sizeof(IndexEntry), index->count, f) != (size_t)index->count) {
+        fclose(f);
+        return -1;
+    }
 
     fclose(f);
     return 0;
@@ -50,7 +64,9 @@ int index_add(Index *index, const char *path, ObjectID *id, int mode) {
 
     IndexEntry *e = &index->entries[index->count];
 
-    strcpy(e->path, path);
+    strncpy(e->path, path, sizeof(e->path) - 1);
+    e->path[sizeof(e->path) - 1] = '\0';
+
     e->hash = *id;
     e->mode = mode;
 
