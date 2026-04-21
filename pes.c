@@ -1,31 +1,39 @@
+#include "index.h"
+#include "tree.h"
+#include "pes.h"
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 
-void init_repo() {
-    if (mkdir(".pes", 0777) == -1) {
-        printf("Repository already exists\n");
-        return;
-    }
+void cmd_init() {
+    mkdir(".pes", 0755);
+    mkdir(".pes/objects", 0755);
 
-    mkdir(".pes/objects", 0777);
-    mkdir(".pes/refs", 0777);
-    mkdir(".pes/refs/heads", 0777);
-
-    FILE *f;
-
-    f = fopen(".pes/HEAD", "w");
-    fprintf(f, "refs/heads/main\n");
-    fclose(f);
-
-    f = fopen(".pes/refs/heads/main", "w");
-    fclose(f);
-
-    f = fopen(".pes/index", "w");
-    fclose(f);
+    FILE *f = fopen(".pes/index", "w");
+    if (f) fclose(f);
 
     printf("Initialized empty PES repository\n");
+}
+
+void cmd_add(int argc, char *argv[]) {
+    Index index;
+    index_load(&index);
+
+    for (int i = 2; i < argc; i++) {
+        index_add(&index, argv[i]);
+    }
+
+    index_save(&index);
+}
+
+void cmd_status() {
+    Index index;
+    index_load(&index);
+
+    printf("Staged files:\n");
+    for (int i = 0; i < index.count; i++) {
+        printf("%s\n", index.entries[i].path);
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -35,8 +43,15 @@ int main(int argc, char *argv[]) {
     }
 
     if (strcmp(argv[1], "init") == 0) {
-        init_repo();
-    } else {
+        cmd_init();
+    }
+    else if (strcmp(argv[1], "add") == 0) {
+        cmd_add(argc, argv);
+    }
+    else if (strcmp(argv[1], "status") == 0) {
+        cmd_status();
+    }
+    else {
         printf("Unknown command\n");
     }
 
