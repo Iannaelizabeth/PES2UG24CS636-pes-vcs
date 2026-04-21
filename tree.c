@@ -1,4 +1,4 @@
-// tree.c (Commit 3)
+// tree.c (Commit 4)
 
 #include "tree.h"
 #include "index.h"
@@ -7,8 +7,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+int compare_entries(const void *a, const void *b) {
+    IndexEntry *ea = (IndexEntry *)a;
+    IndexEntry *eb = (IndexEntry *)b;
+    return strcmp(ea->path, eb->path);
+}
+
 int tree_from_index(Index *index, ObjectID *tree_id) {
     if (!index || index->count == 0) return -1;
+
+    qsort(index->entries, index->count, sizeof(IndexEntry), compare_entries);
 
     char buffer[4096];
     int offset = 0;
