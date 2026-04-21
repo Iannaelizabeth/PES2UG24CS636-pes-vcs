@@ -1,8 +1,7 @@
-// tree.c (Commit 5 FINAL)
-
 #include "tree.h"
 #include "index.h"
 #include "pes.h"
+#include "object.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,18 +12,26 @@ int compare_entries(const void *a, const void *b) {
     return strcmp(ea->path, eb->path);
 }
 
-int tree_from_index(Index *index, ObjectID *tree_id) {
-    if (!index || index->count == 0) return -1;
+int tree_from_index(ObjectID *id_out) {
+    Index index;
 
-    qsort(index->entries, index->count, sizeof(IndexEntry), compare_entries);
+    if (index_load(&index) != 0) {
+        return -1;
+    }
+
+    if (index.count == 0) {
+        return -1;
+    }
+
+    qsort(index.entries, index.count, sizeof(IndexEntry), compare_entries);
 
     char buffer[8192];
     int offset = 0;
 
-    for (int i = 0; i < index->count; i++) {
-        IndexEntry *e = &index->entries[i];
+    for (int i = 0; i < index.count; i++) {
+        IndexEntry *e = &index.entries[i];
 
-        char *name = strrchr(e->path, '/');
+        const char *name = strrchr(e->path, '/');
         if (name) name++;
         else name = e->path;
 
@@ -33,10 +40,11 @@ int tree_from_index(Index *index, ObjectID *tree_id) {
 
         buffer[offset++] = '\0';
 
-        memcpy(buffer + offset, e->id.hash, HASH_SIZE);
+        memcpy(buffer + offset, e->hash.hash, HASH_SIZE);
         offset += HASH_SIZE;
     }
 
-    object_write(OBJ_TREE, buffer, offset, tree_id);
+    object_write(OBJ_TREE, buffer, offset, id_out);
+
     return 0;
 }
