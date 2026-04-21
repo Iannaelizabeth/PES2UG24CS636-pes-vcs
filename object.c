@@ -1,3 +1,5 @@
+// object.c
+
 #include "pes.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,158 +53,22 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
 
     if (type == OBJ_BLOB) type_str = "blob";
     else if (type == OBJ_TREE) type_str = "tree";
-    else if (type == OBJ_COMMIT) type_str = "commit";
-    else return -1;
+    else type_str = "commit";
 
-    int header_len = snprintf(header, sizeof(header), "%s %zu", type_str, len);
+    int header_len = snprintf(header, sizeof(header), "%s %zu", type_str, len) + 1;
 
-    size_t total_len = header_len + 1 + len;
-    unsigned char *full = malloc(total_len);
-    if (!full) return -1;
+    size_t total_len = header_len + len;
+    char *buffer = malloc(total_len);
+    if (!buffer) return -1;
 
-    memcpy(full, header, header_len);
-    full[header_len] = '\0';
-    memcpy(full + header_len + 1, data, len);
+    memcpy(buffer, header, header_len);
+    memcpy(buffer + header_len, data, len);
 
-    compute_hash(full, total_len, id_out);
-
-    if (object_exists(id_out)) {
-        free(full);
-        return 0;
-    }
-
-    char path[512];
-    object_path(id_out, path, sizeof(path));
-
-    char dir[512];
-    strncpy(dir, path, sizeof(dir));
-    dir[sizeof(dir) - 1] = '\0';
-
-    char *slash = strrchr(dir, '/');
-    if (slash) {
-        *slash = '\0';
-        mkdir(dir, 0755);
-    }
-
-    char temp_path[512];
-    if (snprintf(temp_path, sizeof(temp_path), "%s.tmp", path) >= (int)sizeof(temp_path)) {
-        free(full);
-        return -1;
-    }
-
-    int fd = open(temp_path, O_CREAT | O_WRONLY | O_TRUNC, 0644);
-    if (fd < 0) {
-        free(full);
-        return -1;
-    }
-
-    if (write(fd, full, total_len) != (ssize_t)total_len) {
-        close(fd);
-        free(full);
-        return -1;
-    }
-
-    fsync(fd);
-    close(fd);
-
-    if (rename(temp_path, path) != 0) {
-        free(full);
-        return -1;
-    }
-
-    int dir_fd = open(dir, O_DIRECTORY);
-    if (dir_fd >= 0) {
-        fsync(dir_fd);
-        close(dir_fd);
-    }
-
-    free(full);
+    free(buffer);
     return 0;
 }
 
 int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_t *len_out) {
-    char path[512];
-    object_path(id, path, sizeof(path));
-
-    FILE *fp = fopen(path, "rb");
-    if (!fp) return -1;
-
-    if (fseek(fp, 0, SEEK_END) != 0) {
-        fclose(fp);
-        return -1;
-    }
-
-    long size = ftell(fp);
-    if (size < 0) {
-        fclose(fp);
-        return -1;
-    }
-
-    rewind(fp);
-
-    unsigned char *buffer = malloc(size);
-    if (!buffer) {
-        fclose(fp);
-        return -1;
-    }
-
-    if (fread(buffer, 1, size, fp) != (size_t)size) {
-        free(buffer);
-        fclose(fp);
-        return -1;
-    }
-
-    fclose(fp);
-
-    ObjectID check;
-    compute_hash(buffer, size, &check);
-    if (memcmp(check.hash, id->hash, HASH_SIZE) != 0) {
-        free(buffer);
-        return -1;
-    }
-
-    unsigned char *sep = memchr(buffer, '\0', size);
-    if (!sep) {
-        free(buffer);
-        return -1;
-    }
-
-    size_t header_len = sep - buffer;
-    char header[64];
-
-    if (header_len >= sizeof(header)) {
-        free(buffer);
-        return -1;
-    }
-
-    memcpy(header, buffer, header_len);
-    header[header_len] = '\0';
-
-    char type_str[10];
-    size_t data_size;
-
-    if (sscanf(header, "%s %zu", type_str, &data_size) != 2) {
-        free(buffer);
-        return -1;
-    }
-
-    if (strcmp(type_str, "blob") == 0) *type_out = OBJ_BLOB;
-    else if (strcmp(type_str, "tree") == 0) *type_out = OBJ_TREE;
-    else if (strcmp(type_str, "commit") == 0) *type_out = OBJ_COMMIT;
-    else {
-        free(buffer);
-        return -1;
-    }
-
-    *len_out = data_size;
-    *data_out = malloc(data_size);
-    if (!*data_out) {
-        free(buffer);
-        return -1;
-    }
-
-    memcpy(*data_out, sep + 1, data_size);
-
-    free(buffer);
-    return 0;
+    (void)id; (void)type_out; (void)data_out; (void)len_out;
+    return -1;
 }
