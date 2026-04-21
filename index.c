@@ -1,4 +1,4 @@
-// index.c (Commit 3)
+// index.c (Commit 4)
 
 #include "index.h"
 #include <stdio.h>
@@ -34,5 +34,27 @@ int index_save(Index *index) {
     fwrite(index->entries, sizeof(IndexEntry), index->count, f);
 
     fclose(f);
+    return 0;
+}
+
+int index_add(Index *index, const char *path, ObjectID *id, int mode) {
+    for (int i = 0; i < index->count; i++) {
+        if (strcmp(index->entries[i].path, path) == 0) {
+            index->entries[i].hash = *id;
+            index->entries[i].mode = mode;
+            return 0;
+        }
+    }
+
+    index->entries = realloc(index->entries, sizeof(IndexEntry) * (index->count + 1));
+
+    IndexEntry *e = &index->entries[index->count];
+
+    strcpy(e->path, path);
+    e->hash = *id;
+    e->mode = mode;
+
+    index->count++;
+
     return 0;
 }
