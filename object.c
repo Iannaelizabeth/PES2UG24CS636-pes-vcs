@@ -1,4 +1,4 @@
-// object.c (Commit 4)
+// object.c (Commit 5 FINAL)
 
 #include "pes.h"
 #include <stdio.h>
@@ -80,7 +80,6 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
     snprintf(dir, sizeof(dir), "%.*s", (int)(strrchr(path, '/') - path), path);
     mkdir(dir, 0755);
 
-    // temp file
     char tmp[512];
     snprintf(tmp, sizeof(tmp), "%s.tmp", path);
 
@@ -101,6 +100,48 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
 }
 
 int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_t *len_out) {
-    (void)id; (void)type_out; (void)data_out; (void)len_out;
-    return -1;
+    char path[512];
+    object_path(id, path, sizeof(path));
+
+    FILE *f = fopen(path, "rb");
+    if (!f) return -1;
+
+    fseek(f, 0, SEEK_END);
+    size_t size = ftell(f);
+    rewind(f);
+
+    char *buffer = malloc(size);
+    fread(buffer, 1, size, f);
+    fclose(f);
+
+    // verify integrity
+    ObjectID computed;
+    compute_hash(buffer, size, &computed);
+
+    if (memcmp(id->hash, computed.hash, HASH_SIZE) != 0) {
+        free(buffer);
+        return -1;
+    }
+
+    char *null_pos = memchr(buffer, '\0', size);
+    if (!null_pos) {
+        free(buffer);
+        return -1;
+    }
+
+    size_t header_len = null_pos - buffer + 1;
+
+    char type_str[10];
+    sscanf(buffer, "%s", type_str);
+
+    if (strcmp(type_str, "blob") == 0) *type_out = OBJ_BLOB;
+    else if (strcmp(type_str, "tree") == 0) *type_out = OBJ_TREE;
+    else *type_out = OBJ_COMMIT;
+
+    *len_out = size - header_len;
+    *data_out = malloc(*len_out);
+    memcpy(*data_out, buffer + header_len, *len_out);
+
+    free(buffer);
+    return 0;
 }
