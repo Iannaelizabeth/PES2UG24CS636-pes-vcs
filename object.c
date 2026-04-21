@@ -1,5 +1,3 @@
-// object.c (Commit 5 FINAL)
-
 #include "pes.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -81,7 +79,10 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
     mkdir(dir, 0755);
 
     char tmp[512];
-    snprintf(tmp, sizeof(tmp), "%s.tmp", path);
+    if (snprintf(tmp, sizeof(tmp), "%s.tmp", path) >= (int)sizeof(tmp)) {
+        free(buffer);
+        return -1;
+    }
 
     int fd = open(tmp, O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (fd < 0) {
@@ -89,7 +90,12 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
         return -1;
     }
 
-    write(fd, buffer, total_len);
+    if (write(fd, buffer, total_len) != (ssize_t)total_len) {
+        close(fd);
+        free(buffer);
+        return -1;
+    }
+
     fsync(fd);
     close(fd);
 
@@ -111,10 +117,19 @@ int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_
     rewind(f);
 
     char *buffer = malloc(size);
-    fread(buffer, 1, size, f);
+    if (!buffer) {
+        fclose(f);
+        return -1;
+    }
+
+    if (fread(buffer, 1, size, f) != size) {
+        fclose(f);
+        free(buffer);
+        return -1;
+    }
+
     fclose(f);
 
-    // verify integrity
     ObjectID computed;
     compute_hash(buffer, size, &computed);
 
