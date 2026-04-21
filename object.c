@@ -1,4 +1,4 @@
-// object.c (Commit 2)
+// object.c (Commit 3)
 
 #include "pes.h"
 #include <stdio.h>
@@ -65,6 +65,11 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
     memcpy(buffer + header_len, data, len);
 
     compute_hash(buffer, total_len, id_out);
+
+    if (object_exists(id_out)) {
+        free(buffer);
+        return 0;
+    }
 
     free(buffer);
     return 0;
