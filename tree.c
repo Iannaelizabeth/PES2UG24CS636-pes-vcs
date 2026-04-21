@@ -1,4 +1,4 @@
-// tree.c (Commit 2)
+// tree.c (Commit 3)
 
 #include "tree.h"
 #include "index.h"
@@ -16,7 +16,11 @@ int tree_from_index(Index *index, ObjectID *tree_id) {
     for (int i = 0; i < index->count; i++) {
         IndexEntry *e = &index->entries[i];
 
-        offset += sprintf(buffer + offset, "%o %s", e->mode, e->path);
+        char *name = strrchr(e->path, '/');
+        if (name) name++;
+        else name = e->path;
+
+        offset += sprintf(buffer + offset, "%o %s", e->mode, name);
         buffer[offset++] = '\0';
 
         memcpy(buffer + offset, e->id.hash, HASH_SIZE);
