@@ -1,5 +1,11 @@
+#include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 void init_repo() {
-    printf("Init command detected\n");
+    mkdir(".pes", 0777);
+    printf(".pes directory created\n");
 }
 
 int main(int argc, char *argv[]) {
