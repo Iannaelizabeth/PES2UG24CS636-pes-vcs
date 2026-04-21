@@ -1,4 +1,4 @@
-// index.c (Commit 2)
+// index.c (Commit 3)
 
 #include "index.h"
 #include <stdio.h>
@@ -27,6 +27,12 @@ int index_load(Index *index) {
 }
 
 int index_save(Index *index) {
-    (void)index;
+    FILE *f = fopen(INDEX_FILE, "wb");
+    if (!f) return -1;
+
+    fwrite(&index->count, sizeof(int), 1, f);
+    fwrite(index->entries, sizeof(IndexEntry), index->count, f);
+
+    fclose(f);
     return 0;
 }
