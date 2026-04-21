@@ -1,4 +1,4 @@
-// commit.c (Commit 1)
+// commit.c (Commit 2)
 
 #include "commit.h"
 #include "tree.h"
@@ -9,6 +9,13 @@
 #include <string.h>
 
 int create_commit(const char *message, ObjectID *commit_id) {
-    printf("Creating commit...\n");
+    ObjectID tree_id;
+
+    if (tree_from_index(&tree_id) != 0) {
+        return -1;
+    }
+
+    printf("Tree created\n");
+
     return 0;
 }
