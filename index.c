@@ -7,21 +7,29 @@
 #define INDEX_FILE ".pes/index"
 
 int index_load(Index *index) {
-    FILE *f = fopen(INDEX_FILE, "rb");
+    FILE *f = fopen(INDEX_FILE, "r");
 
-    if (!f) {
-        index->count = 0;
-        return 0;
-    }
+    index->count = 0;
 
-    if (fread(&index->count, sizeof(int), 1, f) != 1) {
-        fclose(f);
-        return -1;
-    }
+    if (!f) return 0;
 
-    if (fread(index->entries, sizeof(IndexEntry), index->count, f) != (size_t)index->count) {
-        fclose(f);
-        return -1;
+    char hex[65];
+    char path[256];
+
+    while (fscanf(f, "%s %s", hex, path) == 2) {
+        if (index->count >= MAX_INDEX_ENTRIES) break;
+
+        hex_to_hash(hex, &index->entries[index->count].hash);
+
+        strncpy(index->entries[index->count].path, path,
+                sizeof(index->entries[index->count].path) - 1);
+        index->entries[index->count].path[
+            sizeof(index->entries[index->count].path) - 1
+        ] = '\0';
+
+        index->entries[index->count].mode = 100644;
+
+        index->count++;
     }
 
     fclose(f);
@@ -29,17 +37,14 @@ int index_load(Index *index) {
 }
 
 int index_save(const Index *index) {
-    FILE *f = fopen(INDEX_FILE, "wb");
+    FILE *f = fopen(INDEX_FILE, "w");
     if (!f) return -1;
 
-    if (fwrite(&index->count, sizeof(int), 1, f) != 1) {
-        fclose(f);
-        return -1;
-    }
+    for (int i = 0; i < index->count; i++) {
+        char hex[65];
+        hash_to_hex(&index->entries[i].hash, hex);
 
-    if (fwrite(index->entries, sizeof(IndexEntry), index->count, f) != (size_t)index->count) {
-        fclose(f);
-        return -1;
+        fprintf(f, "%s %s\n", hex, index->entries[i].path);
     }
 
     fclose(f);
@@ -47,7 +52,6 @@ int index_save(const Index *index) {
 }
 
 int index_add(Index *index, const char *path) {
-    // read file
     FILE *f = fopen(path, "rb");
     if (!f) return -1;
 
@@ -61,7 +65,12 @@ int index_add(Index *index, const char *path) {
         return -1;
     }
 
-    fread(buffer, 1, size, f);
+    if (fread(buffer, 1, size, f) != size) {
+        fclose(f);
+        free(buffer);
+        return -1;
+    }
+
     fclose(f);
 
     ObjectID id;
@@ -69,7 +78,7 @@ int index_add(Index *index, const char *path) {
 
     free(buffer);
 
-    // check if already exists
+    // update if exists
     for (int i = 0; i < index->count; i++) {
         if (strcmp(index->entries[i].path, path) == 0) {
             index->entries[i].hash = id;
@@ -77,9 +86,7 @@ int index_add(Index *index, const char *path) {
         }
     }
 
-    if (index->count >= MAX_INDEX_ENTRIES) {
-        return -1;
-    }
+    if (index->count >= MAX_INDEX_ENTRIES) return -1;
 
     IndexEntry *e = &index->entries[index->count];
 
