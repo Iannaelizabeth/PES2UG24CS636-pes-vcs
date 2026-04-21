@@ -4,7 +4,11 @@
 #include <sys/types.h>
 
 void init_repo() {
-    mkdir(".pes", 0777);
+    if (mkdir(".pes", 0777) == -1) {
+        printf("Repository already exists\n");
+        return;
+    }
+
     mkdir(".pes/objects", 0777);
     mkdir(".pes/refs", 0777);
     mkdir(".pes/refs/heads", 0777);
@@ -21,7 +25,7 @@ void init_repo() {
     f = fopen(".pes/index", "w");
     fclose(f);
 
-    printf("Repository structure created\n");
+    printf("Initialized empty PES repository\n");
 }
 
 int main(int argc, char *argv[]) {
