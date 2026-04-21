@@ -1,4 +1,4 @@
-// object.c (Commit 3)
+// object.c (Commit 4)
 
 #include "pes.h"
 #include <stdio.h>
@@ -70,6 +70,31 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
         free(buffer);
         return 0;
     }
+
+    char path[512];
+    object_path(id_out, path, sizeof(path));
+
+    mkdir(OBJECTS_DIR, 0755);
+
+    char dir[512];
+    snprintf(dir, sizeof(dir), "%.*s", (int)(strrchr(path, '/') - path), path);
+    mkdir(dir, 0755);
+
+    // temp file
+    char tmp[512];
+    snprintf(tmp, sizeof(tmp), "%s.tmp", path);
+
+    int fd = open(tmp, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    if (fd < 0) {
+        free(buffer);
+        return -1;
+    }
+
+    write(fd, buffer, total_len);
+    fsync(fd);
+    close(fd);
+
+    rename(tmp, path);
 
     free(buffer);
     return 0;
