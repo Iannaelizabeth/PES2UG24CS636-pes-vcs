@@ -1,4 +1,4 @@
-// object.c
+// object.c (Commit 2)
 
 #include "pes.h"
 #include <stdio.h>
@@ -63,6 +63,8 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
 
     memcpy(buffer, header, header_len);
     memcpy(buffer + header_len, data, len);
+
+    compute_hash(buffer, total_len, id_out);
 
     free(buffer);
     return 0;
