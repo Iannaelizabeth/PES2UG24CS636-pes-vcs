@@ -1,4 +1,4 @@
-// commit.c (Commit 3)
+// commit.c (Commit 4)
 
 #include "commit.h"
 #include "tree.h"
@@ -23,8 +23,9 @@ int create_commit(const char *message, ObjectID *commit_id) {
         message
     );
 
-    printf("Commit content built\n");
+    object_write(OBJ_COMMIT, buffer, len, commit_id);
+
+    printf("Commit object written\n");
 
     return 0;
 }
-
