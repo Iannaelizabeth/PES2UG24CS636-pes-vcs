@@ -1,4 +1,4 @@
-// tree.c (Commit 4)
+// tree.c (Commit 5 FINAL)
 
 #include "tree.h"
 #include "index.h"
@@ -18,7 +18,7 @@ int tree_from_index(Index *index, ObjectID *tree_id) {
 
     qsort(index->entries, index->count, sizeof(IndexEntry), compare_entries);
 
-    char buffer[4096];
+    char buffer[8192];
     int offset = 0;
 
     for (int i = 0; i < index->count; i++) {
@@ -28,7 +28,9 @@ int tree_from_index(Index *index, ObjectID *tree_id) {
         if (name) name++;
         else name = e->path;
 
-        offset += sprintf(buffer + offset, "%o %s", e->mode, name);
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset,
+                           "%o %s", e->mode, name);
+
         buffer[offset++] = '\0';
 
         memcpy(buffer + offset, e->id.hash, HASH_SIZE);
